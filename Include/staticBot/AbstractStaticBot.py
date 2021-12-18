@@ -24,6 +24,9 @@ class AbstractStaticBot(ABC):
     def _show_undone_tasks(self, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
                            day=str(jdt.datetime.now().day)): pass
 
+    @abstractmethod
+    def _split_add_task_command(self, task_command): pass
+
     @abstractmethod  # .done
     def _done_task(self, task_number, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
                    day=str(jdt.datetime.now().day)): pass
@@ -42,4 +45,6 @@ class AbstractStaticBot(ABC):
     def handler(self): pass
 
     @abstractmethod  # .help
-    def help(self): pass
+    def _help(self): pass
+
+

@@ -13,34 +13,33 @@ class StaticBot(AbstractStaticBot):
         self.__CHECK_CHARACTER = '\u2713'
         self.__UNCHECK_CHARACTER = '\u2717'
         self.__ABOUT_ME = "ABOUT ME!"
-        self.__HELP = "For more information on a specific command, type .help command-name\n" +\
-                      "**.add**         Add task to list.\n" +\
-                      "**.copy**        Copy all remaining tasks to list of tomorrow.\n" +\
-                      "**.del**         Delete a task by index.\n" +\
-                      "**.done**        Mark the task as done.\n" +\
-                      "**.show**        Show tasks list.\n" +\
+        self.__HELP = "For more information on a specific command, type .help command-name:\n" +\
+                      "**.add**            Add task to list.\n" +\
+                      "**.copy**          Copy all remaining tasks to list of tomorrow.\n" +\
+                      "**.del**              Delete a task by index.\n" +\
+                      "**.done**          Mark the task as done.\n" +\
+                      "**.show**          Show tasks list.\n" +\
                       "**.showd**       Show all finished tasks in the list.\n" +\
                       "**.showu**       show all remaining tasks in the list.\n"
-
         self.__ProxyServer = ""
         self.__ProxyPort = ""
 
     def _add_task(self, task, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
                   day=str(jdt.datetime.now().day)):
-        with open('../../source/schedule.json', 'r+') as file:
+        with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day].append(task)
             file.seek(0)
-            json.dump(file_data, file)
+            json.dump(file_data, file, indent=4)
             file.close()
 
     def _delete_task(self, task_number, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
                      day=str(jdt.datetime.now().day)):
-        with open('../../source/schedule.json', 'r+') as file:
+        with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day].remove(task_number)
             file.seek(0)
-            json.dump(file_data, file)
+            json.dump(file_data, file, indent=4)
             file.close()
 
     def _show_tasks(self, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
@@ -88,9 +87,44 @@ class StaticBot(AbstractStaticBot):
             todo_massage = "Well done! u complete all tasks for this day."
         return todo_massage
 
+    def _split_add_task_command(self, task_command):
+        array_string = []
+        message_open_brackets = 0
+        message_found = False
+        is_in_brackets = False
+        message_split = ""
+        for char in task_command:
+            if char == ' ':
+                if is_in_brackets:
+                    message_split += char
+                else:
+                    array_string.append(message_split)
+                    message_split = ""
+            elif char == "[":
+                message_open_brackets += 1
+                if is_in_brackets and message_open_brackets != 0:
+                    message_split += char
+                is_in_brackets = True
+
+            elif char == "]":
+                message_open_brackets -= 1
+                if message_open_brackets != 0:
+                    message_split += char
+            else:
+                message_split += char
+            if message_open_brackets == 0:
+                is_in_brackets = False
+            if message_found:
+                is_in_brackets = False
+                if message_open_brackets == 0:
+                    array_string.append(message_split)
+                    message_split = ""
+        array_string.append(message_split)
+        return array_string
+
     def _done_task(self, task_number, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
                    day=str(jdt.datetime.now().day)):
-        with open('../../source/schedule.json', 'r+') as file:
+        with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day][task_number - 1] = file_data[year][month][day][
                                                                task_number - 1] + " " + self.__CHECK_CHARACTER
@@ -99,7 +133,7 @@ class StaticBot(AbstractStaticBot):
             file.close()
 
     def _done_last_remaining_task_for_today(self):
-        with open('../../source/schedule.json', 'r+') as file:
+        with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data_in_today = file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day]
             for i in range(len(file_data_in_today)):
@@ -143,18 +177,27 @@ class StaticBot(AbstractStaticBot):
 
             if is_private:
                 if sender.phone == '989010285337' or sender.phone == '989908210410':
-                    massage_str_array = event.raw_text.split()
+                    massage_str_array = self._split_add_task_command(event.raw_text)
 
                     if massage_str_array[0] == '.add':
-                        pass
+                        if len(massage_str_array) == 2:
+                            self._add_task(massage_str_array[1])
+                        elif len(massage_str_array) == 3:
+                            self._add_task(massage_str_array[1], day=massage_str_array[2])
+                        elif len(massage_str_array) == 4:
+                            self._add_task(massage_str_array[1], day=massage_str_array[2], month=massage_str_array[3])
+                        elif len(massage_str_array) == 5:
+                            self._add_task(massage_str_array[1], day=massage_str_array[2], month=massage_str_array[3], year=massage_str_array[4])
+
                     elif massage_str_array[0] == '.copy':
-                        pass
+                        self._copy_remaining_tasks_to_tomorrow()
+
                     elif massage_str_array[0] == '.del':
                         pass
                     elif massage_str_array[0] == '.done':
                         pass
                     elif massage_str_array[0] == '.help':
-                        pass
+                        await client.send_message(event.chat_id, self.__HELP, link_preview=False)
                     elif massage_str_array[0] == '.show':
                         pass
                     elif massage_str_array[0] == '.showd':
@@ -207,6 +250,13 @@ class StaticBot(AbstractStaticBot):
         client.start()
         client.run_until_disconnected()
 
-    def help(self):
+
+
+    def _help(self):
         pass
+
+
+
+
+
 
