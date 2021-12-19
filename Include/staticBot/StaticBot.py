@@ -13,16 +13,18 @@ class StaticBot(AbstractStaticBot):
         self.__CHECK_CHARACTER = '\u2713'
         self.__UNCHECK_CHARACTER = '\u2717'
         self.__ABOUT_ME = "ABOUT ME!"
-        self.__HELP = "For more information on a specific command, type .help command-name:\n" +\
-                      "**.add**            Add task to list.\n" +\
-                      "**.copy**          Copy all remaining tasks to list of tomorrow.\n" +\
-                      "**.del**              Delete a task by index.\n" +\
-                      "**.done**          Mark the task as done.\n" +\
-                      "**.show**          Show tasks list.\n" +\
-                      "**.showd**       Show all finished tasks in the list.\n" +\
+        self.__HELP = "For more information on a specific command, type .help command-name:\n" + \
+                      "**.add**            Add task to list.\n" + \
+                      "**.copy**          Copy all remaining tasks to list of tomorrow.\n" + \
+                      "**.del**              Delete a task by index.\n" + \
+                      "**.done**          Mark the task as done.\n" + \
+                      "**.show**          Show tasks list.\n" + \
+                      "**.showd**       Show all finished tasks in the list.\n" + \
                       "**.showu**       show all remaining tasks in the list.\n"
         self.__ProxyServer = ""
         self.__ProxyPort = ""
+        self.__STATUS_OK_MESSAGE = "Done successfully."
+        self.__STATUS_InternalServer_MESSAGE = "Process was not successful!"
 
     def _add_task(self, task, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
                   day=str(jdt.datetime.now().day)):
@@ -80,7 +82,7 @@ class StaticBot(AbstractStaticBot):
         else:
             todo_massage = "Your undone task list:"
             for item in data[year][month][day]:
-                if self.__UNCHECK_CHARACTER in item:
+                if self.__CHECK_CHARACTER not in item:
                     todo_massage += "\n" + item
         f.close()
         if todo_massage == "Your undone task list:":
@@ -126,8 +128,8 @@ class StaticBot(AbstractStaticBot):
                    day=str(jdt.datetime.now().day)):
         with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
-            file_data[year][month][day][task_number - 1] = file_data[year][month][day][
-                                                               task_number - 1] + " " + self.__CHECK_CHARACTER
+            file_data[year][month][day][int(task_number) - 1] = file_data[year][month][day][
+                                                                    int(task_number) - 1] + " " + self.__CHECK_CHARACTER
             file.seek(0)
             json.dump(file_data, file)
             file.close()
@@ -180,83 +182,123 @@ class StaticBot(AbstractStaticBot):
                     massage_str_array = self._split_add_task_command(event.raw_text)
 
                     if massage_str_array[0] == '.add':
-                        if len(massage_str_array) == 2:
-                            self._add_task(massage_str_array[1])
-                        elif len(massage_str_array) == 3:
-                            self._add_task(massage_str_array[1], day=massage_str_array[2])
-                        elif len(massage_str_array) == 4:
-                            self._add_task(massage_str_array[1], day=massage_str_array[2], month=massage_str_array[3])
-                        elif len(massage_str_array) == 5:
-                            self._add_task(massage_str_array[1], day=massage_str_array[2], month=massage_str_array[3], year=massage_str_array[4])
+                        try:
+                            if len(massage_str_array) == 2:
+                                self._add_task(massage_str_array[1])
+                            elif len(massage_str_array) == 3:
+                                self._add_task(massage_str_array[1], day=massage_str_array[2])
+                            elif len(massage_str_array) == 4:
+                                self._add_task(massage_str_array[1], day=massage_str_array[2],
+                                               month=massage_str_array[3])
+                            elif len(massage_str_array) == 5:
+                                self._add_task(massage_str_array[1], day=massage_str_array[2],
+                                               month=massage_str_array[3], year=massage_str_array[4])
+
+                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
 
                     elif massage_str_array[0] == '.copy':
-                        self._copy_remaining_tasks_to_tomorrow()
-
+                        try:
+                            self._copy_remaining_tasks_to_tomorrow()
+                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
                     elif massage_str_array[0] == '.del':
-                        pass
+                        try:
+                            if len(massage_str_array) == 2:
+                                self._delete_task(massage_str_array[1])
+                            elif len(massage_str_array) == 3:
+                                self._delete_task(massage_str_array[1], day=massage_str_array[2])
+                            elif len(massage_str_array) == 4:
+                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                                  month=massage_str_array[3])
+                            elif len(massage_str_array) == 5:
+                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                                  month=massage_str_array[3], year=massage_str_array[4])
+
+                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
+
                     elif massage_str_array[0] == '.done':
-                        pass
+                        try:
+                            if len(massage_str_array) == 1:
+                                self._done_last_remaining_task_for_today()
+                            elif len(massage_str_array) == 2:
+                                self._done_task(massage_str_array[1])
+                            elif len(massage_str_array) == 3:
+                                self._delete_task(massage_str_array[1], day=massage_str_array[2])
+                            elif len(massage_str_array) == 4:
+                                self._done_task(massage_str_array[1], day=massage_str_array[2],
+                                                month=massage_str_array[3])
+                            elif len(massage_str_array) == 5:
+                                self._done_task(massage_str_array[1], day=massage_str_array[2],
+                                                month=massage_str_array[3], year=massage_str_array[4])
+                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
+
                     elif massage_str_array[0] == '.help':
                         await client.send_message(event.chat_id, self.__HELP, link_preview=False)
+
+
                     elif massage_str_array[0] == '.show':
-                        pass
+                        response_message=""
+                        try:
+                            if len(massage_str_array) == 1:
+                                response_message=self._show_tasks()
+                            elif len(massage_str_array) == 2:
+                                response_message=self._show_tasks(day=massage_str_array[1])
+                            elif len(massage_str_array) == 3:
+                                response_message=self._show_tasks(day=massage_str_array[1], month=massage_str_array[2])
+                            elif len(massage_str_array) == 4:
+                                response_message=self._show_tasks(day=massage_str_array[1], month=massage_str_array[2],
+                                                 year=massage_str_array[3])
+                            await client.send_message(event.chat_id, response_message, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
                     elif massage_str_array[0] == '.showd':
-                        pass
+                        try:
+                            if len(massage_str_array) == 1:
+                                response_message=self._show_done_tasks()
+                            elif len(massage_str_array) == 2:
+                                response_message=self._show_done_tasks(day=massage_str_array[1])
+                            elif len(massage_str_array) == 3:
+                                response_message=self._show_done_tasks(day=massage_str_array[1], month=massage_str_array[2])
+                            elif len(massage_str_array) == 4:
+                                response_message=self._show_done_tasks(day=massage_str_array[1], month=massage_str_array[2],
+                                                 year=massage_str_array[3])
+                            await client.send_message(event.chat_id, response_message, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
                     elif massage_str_array[0] == '.showu':
-                        pass
-
-
-
-
-                    if massage_str_array[0] == '.todo':
-                        message = ""
-                        if len(massage_str_array) == 1:
-                            message = self._show_tasks()
-                        elif len(massage_str_array) == 2:
-                            message = self._show_tasks(day=massage_str_array[1])
-                        elif len(massage_str_array) == 3:
-                            message = self._show_tasks(month=massage_str_array[2], day=massage_str_array[1])
-                        elif len(massage_str_array) == 4:
-                            message = self._show_tasks(year=massage_str_array[3], month=massage_str_array[2],
-                                                       day=massage_str_array[1])
-
-                        await client.send_message(event.chat_id, message, link_preview=False)
-
-                    if '!done' in event.raw_text:
-                        if len(massage_str_array) == 1:
-                            self._done_last_remaining_task_for_today()
-                        elif len(massage_str_array) == 2:
-                            self._done_task(task_number=massage_str_array[1])
-                        elif len(massage_str_array) == 3:
-                            self._done_task(day=massage_str_array[2], task_number=massage_str_array[1])
-                        elif len(massage_str_array) == 4:
-                            self._done_task(month=massage_str_array[3], day=massage_str_array[2],
-                                            task_number=massage_str_array[1])
-                        elif len(massage_str_array) == 5:
-                            self._done_task(year=massage_str_array[4], month=massage_str_array[3],
-                                            day=massage_str_array[2],
-                                            task_number=massage_str_array[1])
+                        try:
+                            if len(massage_str_array) == 1:
+                                response_message=self._show_undone_tasks()
+                            elif len(massage_str_array) == 2:
+                                response_message=self._show_undone_tasks(day=massage_str_array[1])
+                            elif len(massage_str_array) == 3:
+                                response_message=self._show_undone_tasks(day=massage_str_array[1], month=massage_str_array[2])
+                            elif len(massage_str_array) == 4:
+                                response_message=self._show_undone_tasks(day=massage_str_array[1], month=massage_str_array[2],
+                                                      year=massage_str_array[3])
+                            await client.send_message(event.chat_id, response_message, link_preview=False)
+                        except:
+                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
+                                                      link_preview=False)
 
                     elif '!about' == event.raw_text:
                         await client.send_message(event.chat_id, self.__ABOUT_ME, link_preview=False)
 
-                    elif '!resume' == event.raw_text:
-                        await client.send_file(event.chat_id, '../source/resume.pdf')
-                        await client.send_message(
-                            event.chat_id,
-                            "also you can see my [website](https://sayedmohammadali-mirkazemi.ir)! for more information :/",
-                            link_preview=False)
-
         client.start()
         client.run_until_disconnected()
 
-
-
     def _help(self):
         pass
-
-
-
-
-
-
