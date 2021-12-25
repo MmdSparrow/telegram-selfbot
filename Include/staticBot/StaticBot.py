@@ -1,10 +1,10 @@
 from telethon import TelegramClient, connection, events
-from Include.staticBot.AbstractStaticBot import AbstractStaticBot
+from . import AbstractStaticBot
 import json
 import jdatetime as jdt
 
 
-class StaticBot(AbstractStaticBot):
+class StaticBot(AbstractStaticBot.AbstractStaticBot):
 
     def __init__(self):
         # self.__
@@ -21,13 +21,16 @@ class StaticBot(AbstractStaticBot):
                       "**.show**          Show tasks list.\n" + \
                       "**.showd**       Show all finished tasks in the list.\n" + \
                       "**.showu**       show all remaining tasks in the list.\n"
-        self.__ProxyServer = ""
-        self.__ProxyPort = ""
+        # proxy
+        self.__ProxyServer = 'Unity-Proxy.dynu.com'
+        self.__ProxyPort = 443
+        self.__PoxySecret = 'ddf4359a9b325ff1d1e5084df0e0f7537b'
+
+        # status messages
         self.__STATUS_OK_MESSAGE = "Done successfully."
         self.__STATUS_InternalServer_MESSAGE = "Process was not successful!"
 
-    def _add_task(self, task, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
-                  day=str(jdt.datetime.now().day)):
+    def _add_task(self, task, year, month, day):
         with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day].append(task)
@@ -35,8 +38,7 @@ class StaticBot(AbstractStaticBot):
             json.dump(file_data, file, indent=4)
             file.close()
 
-    def _delete_task(self, task_number, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
-                     day=str(jdt.datetime.now().day)):
+    def _delete_task(self, task_number, year, month, day):
         with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day].remove(task_number)
@@ -44,8 +46,7 @@ class StaticBot(AbstractStaticBot):
             json.dump(file_data, file, indent=4)
             file.close()
 
-    def _show_tasks(self, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
-                    day=str(jdt.datetime.now().day)):
+    def _show_tasks(self, year, month, day):
         f = open('../source/schedule.json')
         data = json.load(f)
         if len(data[year][month][day]) == 0:
@@ -57,8 +58,7 @@ class StaticBot(AbstractStaticBot):
         f.close()
         return todo_massage
 
-    def _show_done_tasks(self, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
-                         day=str(jdt.datetime.now().day)):
+    def _show_done_tasks(self, year, month, day):
         f = open('../source/schedule.json')
         data = json.load(f)
         if len(data[year][month][day]) == 0:
@@ -73,8 +73,7 @@ class StaticBot(AbstractStaticBot):
             todo_massage = "U do nothing in this day! shame on u :/"
         return todo_massage
 
-    def _show_undone_tasks(self, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
-                           day=str(jdt.datetime.now().day)):
+    def _show_undone_tasks(self, year, month, day):
         f = open('../source/schedule.json')
         data = json.load(f)
         if len(data[year][month][day]) == 0:
@@ -124,8 +123,7 @@ class StaticBot(AbstractStaticBot):
         array_string.append(message_split)
         return array_string
 
-    def _done_task(self, task_number, year=str(jdt.datetime.now().year), month=str(jdt.datetime.now().month),
-                   day=str(jdt.datetime.now().day)):
+    def _done_task(self, task_number, year, month, day):
         with open('../source/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day][int(task_number) - 1] = file_data[year][month][day][
@@ -162,15 +160,15 @@ class StaticBot(AbstractStaticBot):
             file.close()
 
     def handler(self):
-        client = TelegramClient(
-            'anon', self.__API_ID, self.__API_HASH
-        )
-
         # client = TelegramClient(
-        #     'anon', self.__API_ID, self.__API_HASH,
-        #     connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
-        #     proxy=(self.__ProxyServer, self.__ProxyPort, 'secret')
+        #     'anon', self.__API_ID, self.__API_HASH
         # )
+
+        client = TelegramClient(
+            'anon', self.__API_ID, self.__API_HASH,
+            connection=connection.ConnectionTcpMTProxyRandomizedIntermediate,
+            proxy=(self.__ProxyServer, self.__ProxyPort, self.__PoxySecret)
+        )
 
         @client.on(events.NewMessage)
         async def my_event_handler(event):
@@ -184,12 +182,14 @@ class StaticBot(AbstractStaticBot):
                     if massage_str_array[0] == '.add':
                         try:
                             if len(massage_str_array) == 2:
-                                self._add_task(massage_str_array[1])
+                                self._add_task(massage_str_array[1], day=str(jdt.datetime.now().day),
+                                               month=str(jdt.datetime.now().month), year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 3:
-                                self._add_task(massage_str_array[1], day=massage_str_array[2])
+                                self._add_task(massage_str_array[1], day=massage_str_array[2],
+                                               month=str(jdt.datetime.now().month), year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 4:
                                 self._add_task(massage_str_array[1], day=massage_str_array[2],
-                                               month=massage_str_array[3])
+                                               month=massage_str_array[3], year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 5:
                                 self._add_task(massage_str_array[1], day=massage_str_array[2],
                                                month=massage_str_array[3], year=massage_str_array[4])
@@ -209,12 +209,17 @@ class StaticBot(AbstractStaticBot):
                     elif massage_str_array[0] == '.del':
                         try:
                             if len(massage_str_array) == 2:
-                                self._delete_task(massage_str_array[1])
+                                self._delete_task(massage_str_array[1], day=str(jdt.datetime.now().day),
+                                                  month=str(jdt.datetime.now().month),
+                                                  year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 3:
-                                self._delete_task(massage_str_array[1], day=massage_str_array[2])
+                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                                  month=str(jdt.datetime.now().month),
+                                                  year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 4:
                                 self._delete_task(massage_str_array[1], day=massage_str_array[2],
-                                                  month=massage_str_array[3])
+                                                  month=massage_str_array[3],
+                                                  year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 5:
                                 self._delete_task(massage_str_array[1], day=massage_str_array[2],
                                                   month=massage_str_array[3], year=massage_str_array[4])
@@ -229,12 +234,17 @@ class StaticBot(AbstractStaticBot):
                             if len(massage_str_array) == 1:
                                 self._done_last_remaining_task_for_today()
                             elif len(massage_str_array) == 2:
-                                self._done_task(massage_str_array[1])
+                                self._done_task(massage_str_array[1], day=str(jdt.datetime.now().day),
+                                                month=str(jdt.datetime.now().month),
+                                                year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 3:
-                                self._delete_task(massage_str_array[1], day=massage_str_array[2])
+                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                                  month=str(jdt.datetime.now().month),
+                                                  year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 4:
                                 self._done_task(massage_str_array[1], day=massage_str_array[2],
-                                                month=massage_str_array[3])
+                                                month=massage_str_array[3],
+                                                year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 5:
                                 self._done_task(massage_str_array[1], day=massage_str_array[2],
                                                 month=massage_str_array[3], year=massage_str_array[4])
@@ -246,49 +256,71 @@ class StaticBot(AbstractStaticBot):
                     elif massage_str_array[0] == '.help':
                         await client.send_message(event.chat_id, self.__HELP, link_preview=False)
 
-
                     elif massage_str_array[0] == '.show':
-                        response_message=""
+                        response_message = ""
                         try:
                             if len(massage_str_array) == 1:
-                                response_message=self._show_tasks()
+                                response_message = self._show_tasks(day=str(jdt.datetime.now().day),
+                                                                    month=str(jdt.datetime.now().month),
+                                                                    year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 2:
-                                response_message=self._show_tasks(day=massage_str_array[1])
+                                response_message = self._show_tasks(day=massage_str_array[1],
+                                                                    month=str(jdt.datetime.now().month),
+                                                                    year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 3:
-                                response_message=self._show_tasks(day=massage_str_array[1], month=massage_str_array[2])
+                                response_message = self._show_tasks(day=massage_str_array[1],
+                                                                    month=massage_str_array[2],
+                                                                    year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 4:
-                                response_message=self._show_tasks(day=massage_str_array[1], month=massage_str_array[2],
-                                                 year=massage_str_array[3])
+                                response_message = self._show_tasks(day=massage_str_array[1],
+                                                                    month=massage_str_array[2],
+                                                                    year=massage_str_array[3])
                             await client.send_message(event.chat_id, response_message, link_preview=False)
                         except:
                             await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
                                                       link_preview=False)
                     elif massage_str_array[0] == '.showd':
+                        response_message = ""
                         try:
                             if len(massage_str_array) == 1:
-                                response_message=self._show_done_tasks()
+                                response_message = self._show_done_tasks(day=str(jdt.datetime.now().day),
+                                                                         month=str(jdt.datetime.now().month),
+                                                                         year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 2:
-                                response_message=self._show_done_tasks(day=massage_str_array[1])
+                                response_message = self._show_done_tasks(day=massage_str_array[1],
+                                                                         month=str(jdt.datetime.now().month),
+                                                                         year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 3:
-                                response_message=self._show_done_tasks(day=massage_str_array[1], month=massage_str_array[2])
+                                response_message = self._show_done_tasks(day=massage_str_array[1],
+                                                                         month=massage_str_array[2],
+                                                                         year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 4:
-                                response_message=self._show_done_tasks(day=massage_str_array[1], month=massage_str_array[2],
-                                                 year=massage_str_array[3])
+                                response_message = self._show_done_tasks(day=massage_str_array[1],
+                                                                         month=massage_str_array[2],
+                                                                         year=massage_str_array[3])
                             await client.send_message(event.chat_id, response_message, link_preview=False)
                         except:
                             await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
                                                       link_preview=False)
                     elif massage_str_array[0] == '.showu':
+                        response_message = ""
                         try:
                             if len(massage_str_array) == 1:
-                                response_message=self._show_undone_tasks()
+                                response_message = self._show_undone_tasks(day=str(jdt.datetime.now().day),
+                                                                           month=str(jdt.datetime.now().month),
+                                                                           year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 2:
-                                response_message=self._show_undone_tasks(day=massage_str_array[1])
+                                response_message = self._show_undone_tasks(day=massage_str_array[1],
+                                                                           month=str(jdt.datetime.now().month),
+                                                                           year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 3:
-                                response_message=self._show_undone_tasks(day=massage_str_array[1], month=massage_str_array[2])
+                                response_message = self._show_undone_tasks(day=massage_str_array[1],
+                                                                           month=massage_str_array[2],
+                                                                           year=str(jdt.datetime.now().year))
                             elif len(massage_str_array) == 4:
-                                response_message=self._show_undone_tasks(day=massage_str_array[1], month=massage_str_array[2],
-                                                      year=massage_str_array[3])
+                                response_message = self._show_undone_tasks(day=massage_str_array[1],
+                                                                           month=massage_str_array[2],
+                                                                           year=massage_str_array[3])
                             await client.send_message(event.chat_id, response_message, link_preview=False)
                         except:
                             await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
