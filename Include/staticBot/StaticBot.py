@@ -31,7 +31,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
         self.__STATUS_InternalServer_MESSAGE = "Process was not successful!"
 
     def _add_task(self, task, year, month, day):
-        with open('../source/schedule.json', 'r+') as file:
+        with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day].append(task)
             file.seek(0)
@@ -39,7 +39,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
             file.close()
 
     def _delete_task(self, task_number, year, month, day):
-        with open('../source/schedule.json', 'r+') as file:
+        with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day].remove(task_number)
             file.seek(0)
@@ -47,7 +47,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
             file.close()
 
     def _show_tasks(self, year, month, day):
-        f = open('../source/schedule.json')
+        f = open('../resource/schedule.json')
         data = json.load(f)
         if len(data[year][month][day]) == 0:
             todo_massage = "You don't defined any task for this day!"
@@ -59,7 +59,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
         return todo_massage
 
     def _show_done_tasks(self, year, month, day):
-        f = open('../source/schedule.json')
+        f = open('../resource/schedule.json')
         data = json.load(f)
         if len(data[year][month][day]) == 0:
             todo_massage = "You don't defined any task for this day!"
@@ -74,7 +74,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
         return todo_massage
 
     def _show_undone_tasks(self, year, month, day):
-        f = open('../source/schedule.json')
+        f = open('../resource/schedule.json')
         data = json.load(f)
         if len(data[year][month][day]) == 0:
             todo_massage = "You don't defined any task for this day!"
@@ -124,7 +124,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
         return array_string
 
     def _done_task(self, task_number, year, month, day):
-        with open('../source/schedule.json', 'r+') as file:
+        with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data[year][month][day][int(task_number) - 1] = file_data[year][month][day][
                                                                     int(task_number) - 1] + " " + self.__CHECK_CHARACTER
@@ -133,7 +133,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
             file.close()
 
     def _done_last_remaining_task_for_today(self):
-        with open('../source/schedule.json', 'r+') as file:
+        with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data_in_today = file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day]
             for i in range(len(file_data_in_today)):
@@ -148,7 +148,7 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
         pass
 
     def _copy_remaining_tasks_to_tomorrow(self):
-        with open('../../source/schedule.json', 'r+') as file:
+        with open('../../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
             file_data_in_today = file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day]
             for i in range(len(file_data_in_today)):
