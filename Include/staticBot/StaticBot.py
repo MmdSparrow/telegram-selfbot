@@ -41,9 +41,10 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
     def _delete_task(self, task_number, year, month, day):
         with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
-            file_data[year][month][day].remove(task_number)
+            del file_data[year][month][day][int(task_number)]
+            print(file_data[year][month][day])
             file.seek(0)
-            json.dump(file_data, file, indent=4)
+            json.dump(file_data, file, indent=5)
             file.close()
 
     def _show_tasks(self, year, month, day):
@@ -129,34 +130,33 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
             file_data[year][month][day][int(task_number) - 1] = file_data[year][month][day][
                                                                     int(task_number) - 1] + " " + self.__CHECK_CHARACTER
             file.seek(0)
-            json.dump(file_data, file)
+            json.dump(file_data, file, indent=5)
             file.close()
 
     def _done_last_remaining_task_for_today(self):
         with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
-            file_data_in_today = file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day]
-            for i in range(len(file_data_in_today)):
-                if self.__CHECK_CHARACTER not in file_data_in_today[i]:
-                    file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day][i] = \
-                        file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day][
+            for i in range(len(file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)])):
+                if self.__CHECK_CHARACTER not in file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)][i]:
+                    file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)][i] = \
+                        file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)][
                             i] + " " + self.__CHECK_CHARACTER
                     break
-        file.close()
+            file.seek(0)
+            json.dump(file_data, file, indent=5)
+            file.close()
 
     def _undone_remaining_tasks(self):
         pass
 
     def _copy_remaining_tasks_to_tomorrow(self):
-        with open('../../resource/schedule.json', 'r+') as file:
+        with open('../resource/schedule.json', 'r+') as file:
             file_data = json.load(file)
-            file_data_in_today = file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day]
-            for i in range(len(file_data_in_today)):
-                if self.__CHECK_CHARACTER not in file_data_in_today[i]:
-                    file_data[jdt.datetime.now().year][jdt.datetime.now().month][str(jdt.datetime.now().day + 1)][i] = \
-                        file_data[jdt.datetime.now().year][jdt.datetime.now().month][jdt.datetime.now().day][i]
-            file.seek(0)
-            json.dump(file_data, file)
+            for i in range(len(file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)])):
+                if self.__CHECK_CHARACTER not in file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)][i]:
+                    print(i)
+                    print(file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)][i])
+                    self._add_task(file_data[str(jdt.datetime.now().year)][str(jdt.datetime.now().month)][str(jdt.datetime.now().day)][i],str(jdt.datetime.now().year),str(jdt.datetime.now().month),str(jdt.datetime.now().day+1))
             file.close()
 
     def handler(self):
@@ -200,58 +200,44 @@ class StaticBot(AbstractStaticBot.AbstractStaticBot):
                                                       link_preview=False)
 
                     elif massage_str_array[0] == '.copy':
-                        try:
-                            self._copy_remaining_tasks_to_tomorrow()
-                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
-                        except:
-                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
-                                                      link_preview=False)
-                    elif massage_str_array[0] == '.del':
-                        try:
-                            if len(massage_str_array) == 2:
-                                self._delete_task(massage_str_array[1], day=str(jdt.datetime.now().day),
-                                                  month=str(jdt.datetime.now().month),
-                                                  year=str(jdt.datetime.now().year))
-                            elif len(massage_str_array) == 3:
-                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
-                                                  month=str(jdt.datetime.now().month),
-                                                  year=str(jdt.datetime.now().year))
-                            elif len(massage_str_array) == 4:
-                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
-                                                  month=massage_str_array[3],
-                                                  year=str(jdt.datetime.now().year))
-                            elif len(massage_str_array) == 5:
-                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
-                                                  month=massage_str_array[3], year=massage_str_array[4])
+                        self._copy_remaining_tasks_to_tomorrow()
 
-                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
-                        except:
-                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
-                                                      link_preview=False)
+                    elif massage_str_array[0] == '.del':
+                        if len(massage_str_array) == 2:
+                            self._delete_task(massage_str_array[1], day=str(jdt.datetime.now().day),
+                                              month=str(jdt.datetime.now().month),
+                                              year=str(jdt.datetime.now().year))
+                        elif len(massage_str_array) == 3:
+                            self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                              month=str(jdt.datetime.now().month),
+                                              year=str(jdt.datetime.now().year))
+                        elif len(massage_str_array) == 4:
+                            self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                              month=massage_str_array[3],
+                                              year=str(jdt.datetime.now().year))
+                        elif len(massage_str_array) == 5:
+                            self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                              month=massage_str_array[3], year=massage_str_array[4])
 
                     elif massage_str_array[0] == '.done':
-                        try:
-                            if len(massage_str_array) == 1:
-                                self._done_last_remaining_task_for_today()
-                            elif len(massage_str_array) == 2:
-                                self._done_task(massage_str_array[1], day=str(jdt.datetime.now().day),
-                                                month=str(jdt.datetime.now().month),
-                                                year=str(jdt.datetime.now().year))
-                            elif len(massage_str_array) == 3:
-                                self._delete_task(massage_str_array[1], day=massage_str_array[2],
-                                                  month=str(jdt.datetime.now().month),
-                                                  year=str(jdt.datetime.now().year))
-                            elif len(massage_str_array) == 4:
-                                self._done_task(massage_str_array[1], day=massage_str_array[2],
-                                                month=massage_str_array[3],
-                                                year=str(jdt.datetime.now().year))
-                            elif len(massage_str_array) == 5:
-                                self._done_task(massage_str_array[1], day=massage_str_array[2],
-                                                month=massage_str_array[3], year=massage_str_array[4])
-                            await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
-                        except:
-                            await client.send_message(event.chat_id, self.__STATUS_InternalServer_MESSAGE,
-                                                      link_preview=False)
+                        if len(massage_str_array) == 1:
+                            self._done_last_remaining_task_for_today()
+                        elif len(massage_str_array) == 2:
+                            self._done_task(massage_str_array[1], day=str(jdt.datetime.now().day),
+                                            month=str(jdt.datetime.now().month),
+                                            year=str(jdt.datetime.now().year))
+                        elif len(massage_str_array) == 3:
+                            self._delete_task(massage_str_array[1], day=massage_str_array[2],
+                                              month=str(jdt.datetime.now().month),
+                                              year=str(jdt.datetime.now().year))
+                        elif len(massage_str_array) == 4:
+                            self._done_task(massage_str_array[1], day=massage_str_array[2],
+                                            month=massage_str_array[3],
+                                            year=str(jdt.datetime.now().year))
+                        elif len(massage_str_array) == 5:
+                            self._done_task(massage_str_array[1], day=massage_str_array[2],
+                                            month=massage_str_array[3], year=massage_str_array[4])
+                        await client.send_message(event.chat_id, self.__STATUS_OK_MESSAGE, link_preview=False)
 
                     elif massage_str_array[0] == '.help':
                         await client.send_message(event.chat_id, self.__HELP, link_preview=False)
